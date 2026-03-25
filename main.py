@@ -61,7 +61,7 @@ def generate(days):
 # -------- Routes --------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
@@ -75,13 +75,20 @@ async def upload(file: UploadFile = File(...)):
         if len(line.split()) >= 2:
             names.append(line)
 
+    if not names:
+        return {"status": "error", "message": "لم يتم العثور على أسماء في الملف"}
+
     people = [
-        {"id": i, "name": names[i] if i < len(names) else f"شخص {i}", "platoon": i // 19}
-        for i in range(190)
+        {"id": i, "name": names[i], "platoon": i // 19}
+        for i in range(len(names))
     ]
 
-    return {"status": "ok"}
+    return {"status": "ok", "count": len(people)}
 
 @app.get("/generate")
 def gen(days: int):
+    if not people:
+        return {"error": "لم يتم تحميل أي أسماء بعد"}
+    if days <= 0:
+        return {"error": "يجب أن يكون عدد الأيام أكبر من صفر"}
     return generate(days)
