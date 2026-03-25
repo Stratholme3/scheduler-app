@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>نظام الجدولة</title>
+
+<style>
+body {
+    font-family: Arial;
+    direction: rtl;
+    text-align: right;
+    background: #0e1117;
+    color: white;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+}
+
+button {
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.card {
+    background: #1c1f26;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>نظام جدولة الخدمات</h1>
+
+<input type="file" id="file">
+<button onclick="upload()">تحميل الأسماء</button>
+
+<br><br>
+
+<input type="number" id="days" value="7">
+<button onclick="generate()">توليد</button>
+
+<div id="result"></div>
+
+</div>
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>
