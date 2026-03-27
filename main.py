@@ -4,13 +4,27 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from collections import defaultdict
 import re
+import json
+import os
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-people = []
+PEOPLE_FILE = "people_data.json"
+
+def load_people_from_disk():
+    if os.path.exists(PEOPLE_FILE):
+        with open(PEOPLE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_people_to_disk(data):
+    with open(PEOPLE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+
+people = load_people_from_disk()
 
 services = [
     {"name": "اعاشة", "count": 12, "weight": 5, "cooldown": 3},
@@ -23,6 +37,7 @@ services = [
 ]
 
 schedule = {}
+schedule_assigned_ids = {}  # day -> set of person IDs assigned that day
 person_load = defaultdict(int)
 last_assigned = defaultdict(lambda: -999)
 last_service = defaultdict(lambda: -999)
@@ -32,9 +47,10 @@ def score(p, d):
     return (d - last_assigned[p["id"]]) * 2 - person_load[p["id"]] * 3
 
 def generate(days):
-    global schedule, person_load, last_assigned, last_service, assignment_count
+    global schedule, schedule_assigned_ids, person_load, last_assigned, last_service, assignment_count
 
     schedule = {}
+    schedule_assigned_ids = {}
     person_load = defaultdict(int)
     last_assigned = defaultdict(lambda: -999)
     last_service = defaultdict(lambda: -999)
@@ -76,6 +92,8 @@ def generate(days):
 
             schedule[d][s["name"]] = [p["name"] for p in selected]
 
+        schedule_assigned_ids[d] = set(assigned_today)
+
     return schedule
 
 
@@ -88,12 +106,9 @@ def suggest(day: int, service: str, name: str):
     if not target:
         return []
 
-    assigned = set()
-    for s in schedule[day]:
-        for n in schedule[day][s]:
-            assigned.add(n)
+    assigned_ids = schedule_assigned_ids.get(day, set())
 
-    candidates = [p for p in people if p["name"] not in assigned]
+    candidates = [p for p in people if p["id"] not in assigned_ids]
 
     candidates.sort(key=lambda p: (
         p["platoon"] != target["platoon"],
@@ -163,6 +178,7 @@ async def upload(file: UploadFile = File(...)):
             "platoon": i // 19
         })
 
+    save_people_to_disk(people)
     return {"status": "ok", "count": len(people)}
 
 
