@@ -136,4 +136,8 @@ async def upload(file: UploadFile = File(...)):
 
 @app.get("/generate")
 def gen(days: int):
+    if not people:
+        return {"error": "لم يتم تحميل الأسماء"}
+    if days <= 0:
+        return {"error": "عدد الأيام غير صالح"}
     return generate(days)
