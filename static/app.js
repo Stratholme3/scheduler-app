@@ -31,44 +31,63 @@ async function upload() {
     }
 
     alert("تم تحميل " + data.count + " اسم بنجاح");
-    await loadPlatoons(data.count);
+    await loadPlatoons();
 }
 
-async function loadPlatoons(totalCount) {
+async function loadPlatoons() {
     const res = await fetch("/platoons");
-    const platoons = await res.json();
-    if (!platoons.length) return;
+    const data = await res.json();
+    if (!data.total) return;
 
     document.getElementById("names-stats").style.display = "block";
 
     document.getElementById("names-summary").innerHTML = `
-        <div class="info-row"><span>إجمالي الأفراد</span><span class="badge">${totalCount}</span></div>
-        <div class="info-row"><span>عدد الفصائل</span><span class="badge">${platoons.length}</span></div>
+        <div class="info-row"><span>إجمالي الأفراد</span><span class="badge">${data.total}</span></div>
+        <div class="info-row"><span>عدد السريات</span><span class="badge">${data.companies.length}</span></div>
+        <div class="info-row"><span>عدد الفصائل</span><span class="badge">${data.companies.reduce((s,c)=>s+c.platoons.length,0)}</span></div>
     `;
 
     const list = document.getElementById("platoon-list");
     list.innerHTML = "";
 
-    platoons.forEach(pl => {
-        const card = document.createElement("div");
-        card.className = "platoon-card";
+    data.companies.forEach(company => {
+        const companyBlock = document.createElement("div");
+        companyBlock.className = "company-block";
 
-        const header = document.createElement("div");
-        header.className = "platoon-header";
-        header.innerHTML = `<span>الفصيلة ${pl.platoon}</span><span class="badge">${pl.count} فرد</span>`;
-        header.addEventListener("click", () => {
-            members.classList.toggle("open");
+        const companyHeader = document.createElement("div");
+        companyHeader.className = "company-header";
+        companyHeader.innerHTML = `<span>السرية ${company.company}</span><span class="badge">${company.member_count} فرد</span>`;
+        companyBlock.appendChild(companyHeader);
+
+        const platoonsList = document.createElement("div");
+        platoonsList.className = "company-platoons";
+
+        company.platoons.forEach(pl => {
+            const card = document.createElement("div");
+            card.className = "platoon-card";
+
+            const header = document.createElement("div");
+            header.className = "platoon-header";
+            header.innerHTML = `<span>الفصيلة ${pl.platoon}</span><span class="badge">${pl.count} فرد</span>`;
+
+            const members = document.createElement("div");
+            members.className = "platoon-members";
+            members.textContent = pl.members.join(" ، ");
+
+            header.addEventListener("click", () => members.classList.toggle("open"));
+
+            card.appendChild(header);
+            card.appendChild(members);
+            platoonsList.appendChild(card);
         });
 
-        const members = document.createElement("div");
-        members.className = "platoon-members";
-        members.textContent = pl.members.join(" ، ");
-
-        card.appendChild(header);
-        card.appendChild(members);
-        list.appendChild(card);
+        companyBlock.appendChild(platoonsList);
+        list.appendChild(companyBlock);
     });
 }
+
+// auto-load on page start if names exist on server
+window.addEventListener("DOMContentLoaded", () => loadPlatoons());
 
 // ── Schedule Tab ───────────────────────────────────────
 async function generate() {

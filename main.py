@@ -138,14 +138,31 @@ def get_stats():
 @app.get("/platoons")
 def get_platoons():
     if not people:
-        return []
-    platoon_map = defaultdict(list)
+        return {"total": 0, "companies": []}
+
+    companies = {}
     for p in people:
-        platoon_map[p["platoon"]].append(p["name"])
-    return [
-        {"platoon": k + 1, "count": len(v), "members": v}
-        for k, v in sorted(platoon_map.items())
-    ]
+        cid = p["company"]
+        pid = p["platoon"]
+        companies.setdefault(cid, {}).setdefault(pid, []).append(p["name"])
+
+    result = []
+    for cid in sorted(companies.keys()):
+        platoons_list = []
+        for pid in sorted(companies[cid].keys()):
+            members = companies[cid][pid]
+            platoons_list.append({
+                "platoon": pid + 1,
+                "count": len(members),
+                "members": members
+            })
+        result.append({
+            "company": cid + 1,
+            "member_count": sum(pl["count"] for pl in platoons_list),
+            "platoons": platoons_list
+        })
+
+    return {"total": len(people), "companies": result}
 
 
 @app.get("/", response_class=HTMLResponse)

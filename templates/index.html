@@ -130,6 +130,28 @@ input[type="file"], input[type="number"], input[type="text"] {
     font-size: 12px;
 }
 
+.company-block {
+    margin-bottom: 16px;
+}
+
+.company-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #1c2a38;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 15px;
+    color: #4fc3f7;
+    border-right: 3px solid #2d8cff;
+}
+
+.company-platoons {
+    padding-right: 12px;
+}
+
 .platoon-card {
     background: #12151c;
     border-radius: 8px;
@@ -342,7 +364,7 @@ input[type="file"], input[type="number"], input[type="text"] {
         <div class="card">
             <div id="names-summary"></div>
         </div>
-        <div class="section-title" style="margin-bottom:10px">الفصائل</div>
+        <div class="section-title" style="margin-bottom:10px">الكتيبة — السريات والفصائل</div>
         <div id="platoon-list"></div>
     </div>
 </div>
@@ -385,6 +407,6 @@ input[type="file"], input[type="number"], input[type="text"] {
     </div>
 </div>
 
-<script src="/static/app.js?v=4"></script>
+<script src="/static/app.js?v=5"></script>
 </body>
 </html>
