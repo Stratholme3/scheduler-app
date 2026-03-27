@@ -60,9 +60,10 @@ async function generate() {
             peopleDiv.className = "people";
 
             data[day][service].forEach(name => {
-                const tag = document.createElement("span");
+                const tag = document.createElement("button");
                 tag.className = "name-tag";
                 tag.textContent = name;
+                tag.type = "button";
 
                 tag.addEventListener("click", () => suggest(Number(day), service, name));
 
