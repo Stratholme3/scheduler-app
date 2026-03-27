@@ -118,7 +118,7 @@ function renderSchedule(data) {
                 btn.className = "name-btn";
                 btn.type = "button";
                 btn.textContent = name;
-                btn.addEventListener("click", () => openSuggest(Number(day), service, name));
+                btn.addEventListener("click", () => openSuggest(Number(day), service, name, btn));
                 wrap.appendChild(btn);
             });
 
@@ -245,11 +245,11 @@ function clearHistory() {
 // ── Suggest / Replacement Modal ────────────────────────
 let pendingSuggest = null;
 
-async function openSuggest(day, service, name) {
+async function openSuggest(day, service, name, btnElement) {
     const res = await fetch(`/suggest?day=${day}&service=${encodeURIComponent(service)}&name=${encodeURIComponent(name)}`);
     const data = await res.json();
 
-    pendingSuggest = { day, service, name };
+    pendingSuggest = { day, service, name, btn: btnElement };
 
     document.getElementById("modal-title").textContent = `بدائل مقترحة لـ: ${name}`;
 
@@ -273,10 +273,26 @@ async function openSuggest(day, service, name) {
 }
 
 function confirmReplacement(replacement) {
-    const { day, service, name } = pendingSuggest;
+    const { day, service, name, btn } = pendingSuggest;
+
+    // Update button text live in the schedule
+    if (btn) {
+        btn.textContent = replacement;
+        btn.style.background = "#1a3a20";
+        btn.style.borderColor = "#2ecc71";
+        btn.style.color = "#2ecc71";
+        btn.removeEventListener("click", btn._handler);
+        btn.addEventListener("click", () => openSuggest(day, service, replacement, btn));
+    }
+
+    // Update in-memory schedule so future suggestions are aware
+    if (currentSchedule && currentSchedule[day] && currentSchedule[day][service]) {
+        const idx = currentSchedule[day][service].indexOf(name);
+        if (idx !== -1) currentSchedule[day][service][idx] = replacement;
+    }
+
     addReplacementToHistory(day, service, name, replacement);
     closeModal();
-    alert(`تم تسجيل استبدال ${name} بـ ${replacement} في السجل`);
 }
 
 function closeModal(event) {
