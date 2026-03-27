@@ -375,6 +375,7 @@ input[type="file"], input[type="number"], input[type="text"] {
         <div class="section-title">توليد الجدول</div>
         <input type="number" id="days" value="7" min="1">
         <button class="btn btn-primary" onclick="generate()">توليد</button>
+        <button class="btn btn-secondary" style="margin-top:6px" onclick="exportSchedule()">تصدير PDF / طباعة</button>
     </div>
     <div id="schedule-result"></div>
 </div>
@@ -384,7 +385,10 @@ input[type="file"], input[type="number"], input[type="text"] {
     <div class="card" style="margin-bottom:14px">
         <div class="section-title">توزيع الأحمال</div>
         <p style="font-size:13px;color:#888">يُحدَّث تلقائياً بعد توليد الجدول</p>
-        <button class="btn btn-secondary" style="margin-top:10px" onclick="loadStats()">تحديث</button>
+        <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-secondary" onclick="loadStats()">تحديث</button>
+            <button class="btn btn-secondary" onclick="exportLoads()">تصدير PDF / طباعة</button>
+        </div>
     </div>
     <div id="stats-result"></div>
 </div>
@@ -407,6 +411,6 @@ input[type="file"], input[type="number"], input[type="text"] {
     </div>
 </div>
 
-<script src="/static/app.js?v=5"></script>
+<script src="/static/app.js?v=6"></script>
 </body>
 </html>

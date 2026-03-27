@@ -86,9 +86,6 @@ async function loadPlatoons() {
     });
 }
 
-// auto-load on page start if names exist on server
-window.addEventListener("DOMContentLoaded", () => loadPlatoons());
-
 // ── Schedule Tab ───────────────────────────────────────
 async function generate() {
     const days = parseInt(document.getElementById("days").value);
@@ -100,7 +97,6 @@ async function generate() {
     if (data.error) { alert("خطأ: " + data.error); return; }
 
     currentSchedule = data;
-
     addScheduleToHistory(days, data);
     renderSchedule(data);
 }
@@ -166,6 +162,7 @@ async function loadStats() {
     let html = `<table class="stats-table">
         <thead><tr>
             <th>الاسم</th>
+            <th>السرية</th>
             <th>الفصيلة</th>
             <th>المرات</th>
             <th>الحمل</th>
@@ -175,6 +172,7 @@ async function loadStats() {
         const pct = Math.round((p.load / maxLoad) * 100);
         html += `<tr>
             <td>${p.name}</td>
+            <td>${p.company}</td>
             <td>${p.platoon}</td>
             <td>${p.assignments}</td>
             <td>
@@ -230,7 +228,7 @@ function renderHistory() {
 
     if (scheduleHistory.length) {
         html += '<div class="section-title" style="margin-bottom:10px">الجداول المولَّدة</div>';
-        scheduleHistory.forEach((h, i) => {
+        scheduleHistory.forEach(h => {
             html += `<div class="history-entry">
                 <div class="history-meta">${h.timestamp}</div>
                 <div class="history-text">جدول ${h.days} يوم — ${h.totalAssignments} تكليف إجمالي</div>
@@ -294,7 +292,6 @@ async function openSuggest(day, service, name, btnElement) {
 function confirmReplacement(replacement) {
     const { day, service, name, btn } = pendingSuggest;
 
-    // Update button text live in the schedule
     if (btn) {
         btn.textContent = replacement;
         btn.style.background = "#1a3a20";
@@ -304,7 +301,6 @@ function confirmReplacement(replacement) {
         btn.addEventListener("click", () => openSuggest(day, service, replacement, btn));
     }
 
-    // Update in-memory schedule so future suggestions are aware
     if (currentSchedule && currentSchedule[day] && currentSchedule[day][service]) {
         const idx = currentSchedule[day][service].indexOf(name);
         if (idx !== -1) currentSchedule[day][service][idx] = replacement;
@@ -319,3 +315,24 @@ function closeModal(event) {
     document.getElementById("modal").classList.remove("open");
     pendingSuggest = null;
 }
+
+// ── Export / Print ─────────────────────────────────────
+function exportSchedule() {
+    window.open("/print/schedule", "_blank");
+}
+
+function exportLoads() {
+    window.open("/print/loads", "_blank");
+}
+
+// ── Page startup ───────────────────────────────────────
+window.addEventListener("DOMContentLoaded", async () => {
+    await loadPlatoons();
+
+    const res = await fetch("/current-schedule");
+    const data = await res.json();
+    if (Object.keys(data).length > 0) {
+        currentSchedule = data;
+        renderSchedule(data);
+    }
+});
