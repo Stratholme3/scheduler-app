@@ -1,10 +1,23 @@
+// ── State ──────────────────────────────────────────────
+let currentSchedule = null;
+let scheduleHistory = [];
+let replacementHistory = [];
+
+// ── Tabs ───────────────────────────────────────────────
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+
+    if (name === 'load') loadStats();
+    if (name === 'history') renderHistory();
+}
+
+// ── Names Tab ──────────────────────────────────────────
 async function upload() {
     const file = document.getElementById("file").files[0];
-
-    if (!file) {
-        alert("يرجى اختيار ملف أولاً");
-        return;
-    }
+    if (!file) { alert("يرجى اختيار ملف أولاً"); return; }
 
     const form = new FormData();
     form.append("file", file);
@@ -14,78 +27,260 @@ async function upload() {
 
     if (data.status === "error") {
         alert("خطأ: " + data.message);
-    } else {
-        alert("تم تحميل " + data.count + " اسم بنجاح");
-    }
-}
-
-async function generate() {
-    const days = parseInt(document.getElementById("days").value);
-
-    if (!days || days <= 0) {
-        alert("يرجى إدخال عدد أيام صحيح أكبر من صفر");
         return;
     }
+
+    alert("تم تحميل " + data.count + " اسم بنجاح");
+    await loadPlatoons(data.count);
+}
+
+async function loadPlatoons(totalCount) {
+    const res = await fetch("/platoons");
+    const platoons = await res.json();
+    if (!platoons.length) return;
+
+    document.getElementById("names-stats").style.display = "block";
+
+    document.getElementById("names-summary").innerHTML = `
+        <div class="info-row"><span>إجمالي الأفراد</span><span class="badge">${totalCount}</span></div>
+        <div class="info-row"><span>عدد الفصائل</span><span class="badge">${platoons.length}</span></div>
+    `;
+
+    const list = document.getElementById("platoon-list");
+    list.innerHTML = "";
+
+    platoons.forEach(pl => {
+        const card = document.createElement("div");
+        card.className = "platoon-card";
+
+        const header = document.createElement("div");
+        header.className = "platoon-header";
+        header.innerHTML = `<span>الفصيلة ${pl.platoon}</span><span class="badge">${pl.count} فرد</span>`;
+        header.addEventListener("click", () => {
+            members.classList.toggle("open");
+        });
+
+        const members = document.createElement("div");
+        members.className = "platoon-members";
+        members.textContent = pl.members.join(" ، ");
+
+        card.appendChild(header);
+        card.appendChild(members);
+        list.appendChild(card);
+    });
+}
+
+// ── Schedule Tab ───────────────────────────────────────
+async function generate() {
+    const days = parseInt(document.getElementById("days").value);
+    if (!days || days <= 0) { alert("يرجى إدخال عدد أيام صحيح أكبر من صفر"); return; }
 
     const res = await fetch(`/generate?days=${days}`);
     const data = await res.json();
 
-    if (data.error) {
-        alert("خطأ: " + data.error);
-        return;
-    }
+    if (data.error) { alert("خطأ: " + data.error); return; }
 
-    const container = document.getElementById("result");
+    currentSchedule = data;
+
+    addScheduleToHistory(days, data);
+    renderSchedule(data);
+}
+
+function renderSchedule(data) {
+    const container = document.getElementById("schedule-result");
     container.innerHTML = "";
 
     const sortedDays = Object.keys(data).sort((a, b) => Number(a) - Number(b));
 
     sortedDays.forEach(day => {
         const card = document.createElement("div");
-        card.className = "card";
+        card.className = "day-card";
 
-        const title = document.createElement("h3");
+        const title = document.createElement("div");
+        title.className = "day-title";
         title.textContent = "اليوم " + (Number(day) + 1);
         card.appendChild(title);
 
         for (let service in data[day]) {
-            const serviceDiv = document.createElement("div");
-            serviceDiv.className = "service";
+            const block = document.createElement("div");
+            block.className = "service-block";
 
-            const label = document.createElement("b");
-            label.textContent = service;
-            serviceDiv.appendChild(label);
+            const label = document.createElement("span");
+            label.className = "service-label";
+            label.textContent = `${service} (${data[day][service].length})`;
+            block.appendChild(label);
 
-            const peopleDiv = document.createElement("div");
-            peopleDiv.className = "people";
+            const wrap = document.createElement("div");
+            wrap.className = "people-wrap";
 
             data[day][service].forEach(name => {
-                const tag = document.createElement("button");
-                tag.className = "name-tag";
-                tag.textContent = name;
-                tag.type = "button";
-
-                tag.addEventListener("click", () => suggest(Number(day), service, name));
-
-                peopleDiv.appendChild(tag);
+                const btn = document.createElement("button");
+                btn.className = "name-btn";
+                btn.type = "button";
+                btn.textContent = name;
+                btn.addEventListener("click", () => openSuggest(Number(day), service, name));
+                wrap.appendChild(btn);
             });
 
-            serviceDiv.appendChild(peopleDiv);
-            card.appendChild(serviceDiv);
+            block.appendChild(wrap);
+            card.appendChild(block);
         }
 
         container.appendChild(card);
     });
 }
 
-async function suggest(day, service, name) {
-    const res = await fetch(`/suggest?day=${day}&service=${encodeURIComponent(service)}&name=${encodeURIComponent(name)}`);
+// ── Load Tab ───────────────────────────────────────────
+async function loadStats() {
+    const res = await fetch("/stats");
     const data = await res.json();
 
+    const container = document.getElementById("stats-result");
+
     if (!data.length) {
-        alert("لا يوجد بدائل متاحة");
+        container.innerHTML = '<div class="empty-state">لا توجد بيانات بعد. قم بتوليد الجدول أولاً.</div>';
         return;
     }
 
-    alert("بدائل مقترحة لـ " + name + ":\n\n" + data.join("\n"));
+    const maxLoad = Math.max(...data.map(p => p.load), 1);
+
+    let html = `<table class="stats-table">
+        <thead><tr>
+            <th>الاسم</th>
+            <th>الفصيلة</th>
+            <th>المرات</th>
+            <th>الحمل</th>
+        </tr></thead><tbody>`;
+
+    data.forEach(p => {
+        const pct = Math.round((p.load / maxLoad) * 100);
+        html += `<tr>
+            <td>${p.name}</td>
+            <td>${p.platoon}</td>
+            <td>${p.assignments}</td>
+            <td>
+                <div class="load-bar-wrap">
+                    <div class="load-bar" style="width:${pct}%"></div>
+                </div>
+            </td>
+        </tr>`;
+    });
+
+    html += "</tbody></table>";
+    container.innerHTML = html;
+}
+
+// ── History Tab ────────────────────────────────────────
+function addScheduleToHistory(days, data) {
+    const now = new Date();
+    const total = Object.values(data).reduce((sum, day) => {
+        return sum + Object.values(day).reduce((s, arr) => s + arr.length, 0);
+    }, 0);
+
+    scheduleHistory.unshift({
+        timestamp: now.toLocaleString('ar'),
+        days,
+        totalAssignments: total
+    });
+
+    if (scheduleHistory.length > 20) scheduleHistory.pop();
+}
+
+function addReplacementToHistory(day, service, original, replacement) {
+    const now = new Date();
+    replacementHistory.unshift({
+        timestamp: now.toLocaleString('ar'),
+        day: day + 1,
+        service,
+        original,
+        replacement
+    });
+
+    if (replacementHistory.length > 50) replacementHistory.pop();
+}
+
+function renderHistory() {
+    const container = document.getElementById("history-result");
+
+    if (!scheduleHistory.length && !replacementHistory.length) {
+        container.innerHTML = '<div class="empty-state">لا يوجد سجل بعد.</div>';
+        return;
+    }
+
+    let html = "";
+
+    if (scheduleHistory.length) {
+        html += '<div class="section-title" style="margin-bottom:10px">الجداول المولَّدة</div>';
+        scheduleHistory.forEach((h, i) => {
+            html += `<div class="history-entry">
+                <div class="history-meta">${h.timestamp}</div>
+                <div class="history-text">جدول ${h.days} يوم — ${h.totalAssignments} تكليف إجمالي</div>
+            </div>`;
+        });
+    }
+
+    if (replacementHistory.length) {
+        html += '<div class="section-title" style="margin:14px 0 10px">الاستبدالات</div>';
+        replacementHistory.forEach(r => {
+            html += `<div class="history-entry replacement">
+                <div class="history-meta">${r.timestamp}</div>
+                <div class="history-text">اليوم ${r.day} · ${r.service}<br>
+                    <span style="color:#f0a500">${r.original}</span>
+                    &larr; <span style="color:#4fc3f7">${r.replacement}</span>
+                </div>
+            </div>`;
+        });
+    }
+
+    container.innerHTML = html;
+}
+
+function clearHistory() {
+    if (!confirm("هل تريد مسح السجل؟")) return;
+    scheduleHistory = [];
+    replacementHistory = [];
+    renderHistory();
+}
+
+// ── Suggest / Replacement Modal ────────────────────────
+let pendingSuggest = null;
+
+async function openSuggest(day, service, name) {
+    const res = await fetch(`/suggest?day=${day}&service=${encodeURIComponent(service)}&name=${encodeURIComponent(name)}`);
+    const data = await res.json();
+
+    pendingSuggest = { day, service, name };
+
+    document.getElementById("modal-title").textContent = `بدائل مقترحة لـ: ${name}`;
+
+    const list = document.getElementById("modal-list");
+    list.innerHTML = "";
+
+    if (!data.length) {
+        list.innerHTML = '<div style="color:#888;padding:10px">لا يوجد بدائل متاحة</div>';
+    } else {
+        data.forEach(candidate => {
+            const btn = document.createElement("button");
+            btn.className = "replacement-btn";
+            btn.type = "button";
+            btn.textContent = candidate;
+            btn.addEventListener("click", () => confirmReplacement(candidate));
+            list.appendChild(btn);
+        });
+    }
+
+    document.getElementById("modal").classList.add("open");
+}
+
+function confirmReplacement(replacement) {
+    const { day, service, name } = pendingSuggest;
+    addReplacementToHistory(day, service, name, replacement);
+    closeModal();
+    alert(`تم تسجيل استبدال ${name} بـ ${replacement} في السجل`);
+}
+
+function closeModal(event) {
+    if (event && event.target !== document.getElementById("modal")) return;
+    document.getElementById("modal").classList.remove("open");
+    pendingSuggest = null;
 }

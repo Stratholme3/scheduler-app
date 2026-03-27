@@ -26,23 +26,24 @@ schedule = {}
 person_load = defaultdict(int)
 last_assigned = defaultdict(lambda: -999)
 last_service = defaultdict(lambda: -999)
+assignment_count = defaultdict(int)
 
 def score(p, d):
     return (d - last_assigned[p["id"]]) * 2 - person_load[p["id"]] * 3
 
 def generate(days):
-    global schedule, person_load, last_assigned, last_service
+    global schedule, person_load, last_assigned, last_service, assignment_count
 
     schedule = {}
     person_load = defaultdict(int)
     last_assigned = defaultdict(lambda: -999)
     last_service = defaultdict(lambda: -999)
+    assignment_count = defaultdict(int)
 
     for d in range(days):
         schedule[d] = {}
         assigned_today = set()
 
-        # واجب فصيلة
         platoon_id = d % 10
         group = [p for p in people if p["platoon"] == platoon_id]
 
@@ -53,8 +54,8 @@ def generate(days):
             last_assigned[p["id"]] = d
             last_service[(p["id"], "واجب فصيلة")] = d
             assigned_today.add(p["id"])
+            assignment_count[p["id"]] += 1
 
-        # services
         for s in services:
             candidates = [
                 p for p in people
@@ -71,45 +72,71 @@ def generate(days):
                 last_assigned[p["id"]] = d
                 last_service[(p["id"], s["name"])] = d
                 assigned_today.add(p["id"])
+                assignment_count[p["id"]] += 1
 
             schedule[d][s["name"]] = [p["name"] for p in selected]
 
     return schedule
 
-# -------- Suggest replacements --------
+
 @app.get("/suggest")
 def suggest(day: int, service: str, name: str):
     if day not in schedule:
         return []
 
-    # find person
     target = next((p for p in people if p["name"] == name), None)
     if not target:
         return []
 
-    # people already assigned that day
     assigned = set()
     for s in schedule[day]:
         for n in schedule[day][s]:
             assigned.add(n)
 
-    candidates = [
-        p for p in people
-        if p["name"] not in assigned
-    ]
+    candidates = [p for p in people if p["name"] not in assigned]
 
-    # smart sort
     candidates.sort(key=lambda p: (
-        p["platoon"] != target["platoon"],  # prefer same platoon
+        p["platoon"] != target["platoon"],
         person_load[p["id"]]
     ))
 
     return [p["name"] for p in candidates[:10]]
 
-# -------- Routes --------
+
+@app.get("/stats")
+def get_stats():
+    if not people:
+        return []
+    result = [
+        {
+            "name": p["name"],
+            "platoon": p["platoon"] + 1,
+            "load": person_load[p["id"]],
+            "assignments": assignment_count[p["id"]]
+        }
+        for p in people
+    ]
+    result.sort(key=lambda x: x["load"], reverse=True)
+    return result
+
+
+@app.get("/platoons")
+def get_platoons():
+    if not people:
+        return []
+    platoon_map = defaultdict(list)
+    for p in people:
+        platoon_map[p["platoon"]].append(p["name"])
+    return [
+        {"platoon": k + 1, "count": len(v), "members": v}
+        for k, v in sorted(platoon_map.items())
+    ]
+
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
+
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
@@ -123,6 +150,9 @@ async def upload(file: UploadFile = File(...)):
         if len(line.split()) >= 2:
             names.append(line)
 
+    if not names:
+        return {"status": "error", "message": "لم يتم العثور على أسماء"}
+
     people = []
     for i in range(len(names)):
         people.append({
@@ -134,6 +164,7 @@ async def upload(file: UploadFile = File(...)):
         })
 
     return {"status": "ok", "count": len(people)}
+
 
 @app.get("/generate")
 def gen(days: int):

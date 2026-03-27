@@ -2,122 +2,389 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>نظام جدولة الخدمات</title>
-
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     background: #0e1117;
     color: white;
     direction: rtl;
     text-align: right;
-    margin: 0;
+    min-height: 100vh;
 }
 
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
-}
-
-h1 {
+.app-header {
+    background: #1c1f26;
+    padding: 14px 20px;
     text-align: center;
-    margin-bottom: 20px;
-}
-
-.controls {
-    background: #1c1f26;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
-input, button {
-    padding: 10px;
-    margin: 5px 0;
-    width: 100%;
-    border-radius: 6px;
-    border: none;
-}
-
-button {
-    background: #2d8cff;
-    color: white;
+    font-size: 18px;
     font-weight: bold;
-    cursor: pointer;
+    border-bottom: 2px solid #2d8cff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-button:hover {
-    background: #1a6fe0;
-}
-
-.card {
+.tab-bar {
+    display: flex;
     background: #1c1f26;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 10px;
+    border-bottom: 1px solid #2a2e38;
+    position: sticky;
+    top: 51px;
+    z-index: 9;
+    overflow-x: auto;
 }
 
-.service {
-    margin-bottom: 10px;
-    padding: 8px;
-    background: #2a2e38;
-    border-radius: 6px;
-}
-
-.service b {
-    display: block;
-    margin-bottom: 5px;
-    color: #4fc3f7;
-}
-
-.people {
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-.name-tag {
-    display: inline-block;
-    cursor: pointer;
-    color: #4fc3f7;
-    margin: 2px 4px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: #1c2a38;
+.tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: none;
     border: none;
+    color: #888;
+    font-size: 13px;
     font-family: Arial;
-    font-size: 14px;
-    width: auto;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
     touch-action: manipulation;
 }
 
-.name-tag:hover, .name-tag:active {
+.tab-btn.active {
+    color: #2d8cff;
+    border-bottom-color: #2d8cff;
+    font-weight: bold;
+}
+
+.tab-panel {
+    display: none;
+    padding: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.tab-panel.active { display: block; }
+
+.card {
+    background: #1c1f26;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #4fc3f7;
+    margin-bottom: 12px;
+}
+
+input[type="file"], input[type="number"], input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: 1px solid #2a2e38;
+    background: #12151c;
+    color: white;
+    font-family: Arial;
+    font-size: 14px;
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: none;
+    font-family: Arial;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.btn-primary { background: #2d8cff; color: white; }
+.btn-primary:active { background: #1a6fe0; }
+.btn-secondary { background: #2a2e38; color: #ccc; }
+.btn-secondary:active { background: #3a3e48; }
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #2a2e38;
+    font-size: 14px;
+}
+
+.info-row:last-child { border-bottom: none; }
+
+.badge {
     background: #2d8cff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.platoon-card {
+    background: #12151c;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.platoon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.platoon-members {
+    display: none;
+    padding: 8px 14px 12px;
+    font-size: 13px;
+    line-height: 2;
+    color: #ccc;
+    border-top: 1px solid #2a2e38;
+}
+
+.platoon-members.open { display: block; }
+
+.day-card {
+    background: #1c1f26;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+}
+
+.day-title {
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 10px;
     color: white;
 }
 
+.service-block {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #12151c;
+    border-radius: 8px;
+}
+
+.service-label {
+    display: block;
+    font-weight: bold;
+    color: #4fc3f7;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.people-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.name-btn {
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #1c2a38;
+    color: #4fc3f7;
+    border: 1px solid #2a4060;
+    font-family: Arial;
+    font-size: 13px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.name-btn:active { background: #2d8cff; color: white; }
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.stats-table th {
+    background: #12151c;
+    padding: 10px 8px;
+    color: #4fc3f7;
+    font-weight: bold;
+    border-bottom: 2px solid #2a2e38;
+}
+
+.stats-table td {
+    padding: 9px 8px;
+    border-bottom: 1px solid #1c1f26;
+}
+
+.stats-table tr:nth-child(even) td { background: #12151c22; }
+
+.load-bar-wrap {
+    background: #12151c;
+    border-radius: 4px;
+    height: 8px;
+    min-width: 60px;
+    overflow: hidden;
+}
+
+.load-bar {
+    height: 100%;
+    background: #2d8cff;
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+
+.history-entry {
+    background: #12151c;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-right: 3px solid #2d8cff;
+}
+
+.history-entry.replacement {
+    border-right-color: #f0a500;
+}
+
+.history-meta {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.history-text {
+    font-size: 14px;
+}
+
+.empty-state {
+    text-align: center;
+    color: #555;
+    padding: 40px 20px;
+    font-size: 14px;
+}
+
+/* Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal-box {
+    background: #1c1f26;
+    border-radius: 14px 14px 0 0;
+    padding: 20px 16px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 14px;
+    color: #4fc3f7;
+}
+
+.replacement-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #12151c;
+    border: 1px solid #2a2e38;
+    border-radius: 8px;
+    color: white;
+    font-family: Arial;
+    font-size: 14px;
+    text-align: right;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.replacement-btn:active { background: #2d8cff; border-color: #2d8cff; }
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<div class="app-header">نظام جدولة الخدمات</div>
 
-<h1>نظام جدولة الخدمات</h1>
-
-<div class="controls">
-    <input type="file" id="file">
-    <button onclick="upload()">تحميل الأسماء</button>
-
-    <input type="number" id="days" value="7">
-    <button onclick="generate()">توليد الجدول</button>
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('names')">الأسماء</button>
+    <button class="tab-btn" onclick="switchTab('schedule')">الجدول</button>
+    <button class="tab-btn" onclick="switchTab('load')">الأحمال</button>
+    <button class="tab-btn" onclick="switchTab('history')">السجل</button>
 </div>
 
-<div id="result"></div>
-
+<!-- NAMES TAB -->
+<div id="tab-names" class="tab-panel active">
+    <div class="card">
+        <div class="section-title">تحميل الأسماء</div>
+        <input type="file" id="file" accept=".txt">
+        <button class="btn btn-primary" onclick="upload()">تحميل</button>
+    </div>
+    <div id="names-stats" style="display:none">
+        <div class="card">
+            <div id="names-summary"></div>
+        </div>
+        <div class="section-title" style="margin-bottom:10px">الفصائل</div>
+        <div id="platoon-list"></div>
+    </div>
 </div>
 
-<script src="/static/app.js?v=3"></script>
+<!-- SCHEDULE TAB -->
+<div id="tab-schedule" class="tab-panel">
+    <div class="card">
+        <div class="section-title">توليد الجدول</div>
+        <input type="number" id="days" value="7" min="1">
+        <button class="btn btn-primary" onclick="generate()">توليد</button>
+    </div>
+    <div id="schedule-result"></div>
+</div>
 
+<!-- LOAD TAB -->
+<div id="tab-load" class="tab-panel">
+    <div class="card" style="margin-bottom:14px">
+        <div class="section-title">توزيع الأحمال</div>
+        <p style="font-size:13px;color:#888">يُحدَّث تلقائياً بعد توليد الجدول</p>
+        <button class="btn btn-secondary" style="margin-top:10px" onclick="loadStats()">تحديث</button>
+    </div>
+    <div id="stats-result"></div>
+</div>
+
+<!-- HISTORY TAB -->
+<div id="tab-history" class="tab-panel">
+    <div class="card" style="margin-bottom:14px">
+        <div class="section-title">السجل</div>
+        <button class="btn btn-secondary" onclick="clearHistory()">مسح السجل</button>
+    </div>
+    <div id="history-result"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal-box">
+        <div class="modal-title" id="modal-title"></div>
+        <div id="modal-list"></div>
+        <button class="btn btn-secondary" style="margin-top:6px" onclick="closeModal()">إلغاء</button>
+    </div>
+</div>
+
+<script src="/static/app.js?v=4"></script>
 </body>
 </html>
