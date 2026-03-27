@@ -27,7 +27,7 @@ async function generate() {
     const days = parseInt(document.getElementById("days").value);
 
     if (!days || days <= 0) {
-        alert("يرجى إدخال عدد أيام صحيح أكبر من صفر");
+        alert("يرجى إدخال عدد أيام صحيح");
         return;
     }
 
@@ -45,17 +45,23 @@ async function generate() {
     const sortedDays = Object.keys(data).sort((a, b) => Number(a) - Number(b));
 
     sortedDays.forEach(day => {
-        const div = document.createElement("div");
-        div.className = "card";
+        const card = document.createElement("div");
+        card.className = "card";
 
         let html = `<h3>اليوم ${Number(day) + 1}</h3>`;
 
-        for (let s in data[day]) {
-            html += `<b>${s} (${data[day][s].length})</b><br>`;
-            html += data[day][s].join(" , ") + "<br><br>";
+        for (let service in data[day]) {
+            html += `
+                <div class="service">
+                    <b>${service} (${data[day][service].length})</b>
+                    <div class="people">
+                        ${data[day][service].join(" ، ")}
+                    </div>
+                </div>
+            `;
         }
 
-        div.innerHTML = html;
-        container.appendChild(div);
+        card.innerHTML = html;
+        container.appendChild(card);
     });
 }
