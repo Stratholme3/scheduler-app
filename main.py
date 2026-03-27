@@ -60,6 +60,7 @@ def generate(days):
                 p for p in people
                 if p["id"] not in assigned_today
                 and d - last_service[(p["id"], s["name"])] >= s["cooldown"]
+                and d - last_service[(p["id"], "واجب فصيلة")] >= 1
             ]
 
             candidates.sort(key=lambda p: score(p, d), reverse=True)
