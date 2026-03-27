@@ -44,19 +44,35 @@ async function generate() {
         const card = document.createElement("div");
         card.className = "card";
 
-        let html = `<h3>اليوم ${Number(day) + 1}</h3>`;
+        const title = document.createElement("h3");
+        title.textContent = "اليوم " + (Number(day) + 1);
+        card.appendChild(title);
 
         for (let service in data[day]) {
-            html += `<b>${service}</b><br>`;
+            const serviceDiv = document.createElement("div");
+            serviceDiv.className = "service";
+
+            const label = document.createElement("b");
+            label.textContent = service;
+            serviceDiv.appendChild(label);
+
+            const peopleDiv = document.createElement("div");
+            peopleDiv.className = "people";
 
             data[day][service].forEach(name => {
-                html += `<span onclick="suggest(${day}, '${service}', '${name}')">${name}</span> , `;
+                const tag = document.createElement("span");
+                tag.className = "name-tag";
+                tag.textContent = name;
+
+                tag.addEventListener("click", () => suggest(Number(day), service, name));
+
+                peopleDiv.appendChild(tag);
             });
 
-            html += "<br><br>";
+            serviceDiv.appendChild(peopleDiv);
+            card.appendChild(serviceDiv);
         }
 
-        card.innerHTML = html;
         container.appendChild(card);
     });
 }
@@ -70,5 +86,5 @@ async function suggest(day, service, name) {
         return;
     }
 
-    alert("بدائل مقترحة:\n\n" + data.join("\n"));
+    alert("بدائل مقترحة لـ " + name + ":\n\n" + data.join("\n"));
 }
