@@ -2,34 +2,80 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>نظام الجدولة</title>
+<title>نظام جدولة الخدمات</title>
 
 <style>
 body {
     font-family: Arial;
-    direction: rtl;
-    text-align: right;
     background: #0e1117;
     color: white;
+    direction: rtl;
+    text-align: right;
+    margin: 0;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.controls {
+    background: #1c1f26;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+input, button {
+    padding: 10px;
+    margin: 5px 0;
+    width: 100%;
+    border-radius: 6px;
+    border: none;
 }
 
 button {
-    padding: 10px;
-    margin: 5px;
+    background: #2d8cff;
+    color: white;
+    font-weight: bold;
     cursor: pointer;
+}
+
+button:hover {
+    background: #1a6fe0;
 }
 
 .card {
     background: #1c1f26;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 10px;
 }
+
+.service {
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #2a2e38;
+    border-radius: 6px;
+}
+
+.service b {
+    display: block;
+    margin-bottom: 5px;
+    color: #4fc3f7;
+}
+
+.people {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
 </style>
 </head>
 
@@ -39,13 +85,13 @@ button {
 
 <h1>نظام جدولة الخدمات</h1>
 
-<input type="file" id="file">
-<button onclick="upload()">تحميل الأسماء</button>
+<div class="controls">
+    <input type="file" id="file">
+    <button onclick="upload()">تحميل الأسماء</button>
 
-<br><br>
-
-<input type="number" id="days" value="7">
-<button onclick="generate()">توليد</button>
+    <input type="number" id="days" value="7">
+    <button onclick="generate()">توليد الجدول</button>
+</div>
 
 <div id="result"></div>
 
