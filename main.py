@@ -10,7 +10,6 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# -------- Data --------
 people = []
 
 services = [
@@ -24,24 +23,26 @@ services = [
 ]
 
 schedule = {}
+person_load = defaultdict(int)
+last_assigned = defaultdict(lambda: -999)
+last_service = defaultdict(lambda: -999)
 
-# -------- Core --------
+def score(p, d):
+    return (d - last_assigned[p["id"]]) * 2 - person_load[p["id"]] * 3
+
 def generate(days):
-    global schedule
-    schedule = {}
+    global schedule, person_load, last_assigned, last_service
 
+    schedule = {}
     person_load = defaultdict(int)
     last_assigned = defaultdict(lambda: -999)
     last_service = defaultdict(lambda: -999)
-
-    def score(p, d):
-        return (d - last_assigned[p["id"]]) * 2 - person_load[p["id"]] * 3
 
     for d in range(days):
         schedule[d] = {}
         assigned_today = set()
 
-        # -------- واجب فصيلة (BLOCKING) --------
+        # واجب فصيلة
         platoon_id = d % 10
         group = [p for p in people if p["platoon"] == platoon_id]
 
@@ -53,7 +54,7 @@ def generate(days):
             last_service[(p["id"], "واجب فصيلة")] = d
             assigned_today.add(p["id"])
 
-        # -------- باقي الخدمات --------
+        # services
         for s in services:
             candidates = [
                 p for p in people
@@ -74,6 +75,36 @@ def generate(days):
 
     return schedule
 
+# -------- Suggest replacements --------
+@app.get("/suggest")
+def suggest(day: int, service: str, name: str):
+    if day not in schedule:
+        return []
+
+    # find person
+    target = next((p for p in people if p["name"] == name), None)
+    if not target:
+        return []
+
+    # people already assigned that day
+    assigned = set()
+    for s in schedule[day]:
+        for n in schedule[day][s]:
+            assigned.add(n)
+
+    candidates = [
+        p for p in people
+        if p["name"] not in assigned
+    ]
+
+    # smart sort
+    candidates.sort(key=lambda p: (
+        p["platoon"] != target["platoon"],  # prefer same platoon
+        person_load[p["id"]]
+    ))
+
+    return [p["name"] for p in candidates[:10]]
+
 # -------- Routes --------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
@@ -91,26 +122,18 @@ async def upload(file: UploadFile = File(...)):
         if len(line.split()) >= 2:
             names.append(line)
 
-    if not names:
-        return {"status": "error", "message": "لم يتم العثور على أسماء"}
-
-    # -------- STRUCTURE --------
     people = []
     for i in range(len(names)):
         people.append({
             "id": i,
             "name": names[i],
             "battalion": 0,
-            "company": i // 95,   # 2 سرايا
-            "platoon": i // 19    # 10 فصائل
+            "company": i // 95,
+            "platoon": i // 19
         })
 
     return {"status": "ok", "count": len(people)}
 
 @app.get("/generate")
 def gen(days: int):
-    if not people:
-        return {"error": "لم يتم تحميل الأسماء"}
-    if days <= 0:
-        return {"error": "عدد الأيام غير صالح"}
     return generate(days)
